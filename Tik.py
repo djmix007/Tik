@@ -7,10 +7,11 @@ import asyncio
 import aiohttp
 import threading
 import concurrent.futures
+from bs4 import BeautifulSoup
+
+# ================= CONFIG =================
 
 TOKEN = os.getenv("TOKEN")
-print("TOKEN =", TOKEN)
-
 bot = telebot.TeleBot(TOKEN)
 
 STATS_FILE = "stats.json"
@@ -37,7 +38,7 @@ def add_user(user_id):
         stats["users"].append(user_id)
         save_stats(stats)
 
-# ================= USER PREF =================
+# ================= PREF =================
 
 def set_user_pref(user_id, mode):
     USER_PREFS[user_id] = mode
@@ -49,54 +50,100 @@ def get_user_pref(user_id):
 
 def api_tikwm(url):
     try:
-        r = requests.post("https://tikwm.com/api/", data={"url": url})
+        r = requests.post("https://tikwm.com/api/", data={"url": url}, timeout=10)
         data = r.json()["data"]
         return {
             "video": data["play"],
             "audio": data["music"],
             "title": data["title"]
         }
-    except:
+    except Exception as e:
+        print("tikwm error:", e)
         return None
 
 def api_tiklydown(url):
     try:
-        r = requests.get(f"https://api.tiklydown.me/api/download?url={url}")
+        r = requests.get(f"https://api.tiklydown.me/api/download?url={url}", timeout=10)
         data = r.json()
         return {
             "video": data["video"]["noWatermark"],
             "audio": data["video"]["audio"],
             "title": data["video"]["title"]
         }
-    except:
+    except Exception as e:
+        print("tiklydown error:", e)
         return None
 
-# Parallel APIs
-def get_data(url):
-    apis = [api_tikwm, api_tiklydown]
+def api_ssstik(url):
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(api, url) for api in apis]
+        r = requests.post(
+            "https://ssstik.io/abc?url=dl",
+            data={"id": url, "locale": "en"},
+            headers=headers,
+            timeout=10
+        )
 
-        for future in concurrent.futures.as_completed(futures):
-            data = future.result()
-            if data and data.get("video"):
-                return data
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        link = soup.find("a", {"class": "without_watermark"})
+        if link:
+            return {
+                "video": link["href"],
+                "audio": None,
+                "title": "TikTok Video"
+            }
+
+    except Exception as e:
+        print("ssstik error:", e)
+
     return None
 
-# ================= ASYNC =================
+# ================= GET DATA =================
+
+def get_data(url, retries=2):
+    url = url.split("?")[0]
+
+    apis = [api_tikwm, api_tiklydown, api_ssstik]
+
+    for attempt in range(retries):
+        print(f"TRY {attempt+1}")
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(api, url): api.__name__ for api in apis
+            }
+
+            for future in concurrent.futures.as_completed(futures):
+                api_name = futures[future]
+
+                try:
+                    data = future.result()
+                    if data and data.get("video"):
+                        print(f"SUCCESS FROM {api_name}")
+                        return data
+
+                except Exception as e:
+                    print(f"{api_name} error:", e)
+
+        print("Retrying...")
+
+    return None
+
+# ================= ASYNC AUDIO =================
 
 async def fetch(session, url):
     async with session.get(url) as response:
         return await response.read()
 
-async def download_audio_fast(audio_url, file_path):
+async def download_audio(url, path):
     async with aiohttp.ClientSession() as session:
-        data = await fetch(session, audio_url)
-        with open(file_path, "wb") as f:
+        data = await fetch(session, url)
+        with open(path, "wb") as f:
             f.write(data)
 
-def run_async_task(coro):
+def run_async(coro):
     asyncio.run(coro)
 
 # ================= UI =================
@@ -132,16 +179,16 @@ def start(message):
 🔥 بدون علامة مائية
 📛 اسم الفيديو الحقيقي
 💿 استخراج الصوت
-🧠 ذكاء اختيار السيرفر
+🧠 اختيار أسرع سيرفر
 
 ━━━━━━━━━━━━━━━
 """
 
     bot.send_message(message.chat.id, text, reply_markup=main_buttons())
 
-# ================= AUTO DOWNLOAD =================
+# ================= AUTO =================
 
-@bot.message_handler(func=lambda message: message.text and "tiktok.com" in message.text)
+@bot.message_handler(func=lambda m: m.text and "tiktok.com" in m.text)
 def auto_download(message):
     add_user(message.from_user.id)
 
@@ -159,7 +206,7 @@ def auto_download(message):
         )
         bot.send_message(message.chat.id, "🎯 تختار تحمل إيه؟", reply_markup=markup)
 
-# ================= BUTTONS =================
+# ================= CALLBACK =================
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
@@ -179,95 +226,89 @@ def callback(call):
 
     elif call.data == "stats":
         stats = load_stats()
-        users = len(stats["users"])
-        downloads = stats["downloads"]
-        video = stats["video"]
-        audio = stats["audio"]
-
-        percent_video = (video / downloads * 100) if downloads else 0
-        percent_audio = (audio / downloads * 100) if downloads else 0
-
         text = f"""📊 إحصائيات البوت
 
-👥 المستخدمين: {users}
-📥 التحميلات: {downloads}
+👥 المستخدمين: {len(stats["users"])}
+📥 التحميلات: {stats["downloads"]}
 
-🎬 فيديو: {video} ({percent_video:.1f}%)
-🎧 صوت: {audio} ({percent_audio:.1f}%)
+🎬 فيديو: {stats["video"]}
+🎧 صوت: {stats["audio"]}
 """
         bot.answer_callback_query(call.id, text, show_alert=True)
 
 # ================= VIDEO =================
 
 def process_video(message):
-    bot.send_message(message.chat.id, "⚡ جاري التحميل...")
+    msg = bot.send_message(message.chat.id, "⚡ جاري التحميل...")
 
     def task():
-        data = get_data(message.text)
+        try:
+            data = get_data(message.text)
 
-        if data:
-            bot.send_video(
-                message.chat.id,
-                data["video"],
-                caption=f"🎬 {data['title']}"
-            )
+            if data:
+                bot.send_video(
+                    message.chat.id,
+                    data["video"],
+                    caption=f"🎬 {data['title']}"
+                )
 
-            stats = load_stats()
-            stats["downloads"] += 1
-            stats["video"] += 1
-            save_stats(stats)
+                stats = load_stats()
+                stats["downloads"] += 1
+                stats["video"] += 1
+                save_stats(stats)
 
-            bot.send_message(
-                message.chat.id,
-                "✅ تم التحميل\n\n🔁 عايز تحمل تاني؟",
-                reply_markup=main_buttons()
-            )
-        else:
-            bot.send_message(message.chat.id, "❌ فشل التحميل")
+                bot.edit_message_text("✅ تم التحميل", message.chat.id, msg.message_id)
+
+                bot.send_message(message.chat.id, "🔁 عايز تحمل تاني؟", reply_markup=main_buttons())
+
+            else:
+                bot.edit_message_text("❌ فشل التحميل من كل السيرفرات", message.chat.id, msg.message_id)
+
+        except Exception as e:
+            print("ERROR:", e)
+            bot.edit_message_text("❌ حصل خطأ", message.chat.id, msg.message_id)
 
     threading.Thread(target=task).start()
 
 # ================= AUDIO =================
 
 def process_audio(message):
-    bot.send_message(message.chat.id, "⚡ جاري التحميل...")
+    msg = bot.send_message(message.chat.id, "⚡ جاري التحميل...")
 
     def task():
-        data = get_data(message.text)
+        try:
+            data = get_data(message.text)
 
-        if data:
-            title = data["title"]
-            safe_name = "".join(c for c in title if c.isalnum() or c in " _-")[:50]
-            file_path = f"{safe_name}.mp3"
+            if data and data.get("audio"):
+                title = data["title"]
+                safe = "".join(c for c in title if c.isalnum() or c in " _-")[:50]
+                file_path = f"{safe}.mp3"
 
-            run_async_task(download_audio_fast(data["audio"], file_path))
+                run_async(download_audio(data["audio"], file_path))
 
-            with open(file_path, "rb") as f:
-                bot.send_audio(
-                    message.chat.id,
-                    f,
-                    caption=f"🎧 {title}",
-                    title=title
-                )
+                with open(file_path, "rb") as f:
+                    bot.send_audio(message.chat.id, f, caption=f"🎧 {title}", title=title)
 
-            os.remove(file_path)
+                os.remove(file_path)
 
-            stats = load_stats()
-            stats["downloads"] += 1
-            stats["audio"] += 1
-            save_stats(stats)
+                stats = load_stats()
+                stats["downloads"] += 1
+                stats["audio"] += 1
+                save_stats(stats)
 
-            bot.send_message(
-                message.chat.id,
-                "✅ تم التحميل\n\n🔁 عايز تحمل تاني؟",
-                reply_markup=main_buttons()
-            )
-        else:
-            bot.send_message(message.chat.id, "❌ فشل التحميل")
+                bot.edit_message_text("✅ تم التحميل", message.chat.id, msg.message_id)
+                bot.send_message(message.chat.id, "🔁 عايز تحمل تاني؟", reply_markup=main_buttons())
+
+            else:
+                bot.edit_message_text("❌ الصوت غير متوفر", message.chat.id, msg.message_id)
+
+        except Exception as e:
+            print("ERROR:", e)
+            bot.edit_message_text("❌ حصل خطأ", message.chat.id, msg.message_id)
 
     threading.Thread(target=task).start()
 
 # ================= RUN =================
 
-print("🔥 Bot is running...")
+print("🔥 Bot Running...")
 bot.infinity_polling()
