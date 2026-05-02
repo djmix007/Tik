@@ -8,7 +8,9 @@ import aiohttp
 import threading
 import concurrent.futures
 
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = os.getenv("TOKEN")
+print("TOKEN =", TOKEN)
+
 bot = telebot.TeleBot(TOKEN)
 
 STATS_FILE = "stats.json"
