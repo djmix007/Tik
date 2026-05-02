@@ -7,6 +7,7 @@ import asyncio
 import aiohttp
 import threading
 import concurrent.futures
+import time
 from bs4 import BeautifulSoup
 
 # ================= CONFIG =================
@@ -15,6 +16,7 @@ TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
 STATS_FILE = "stats.json"
+CACHE_FILE = "cache.json"
 USER_PREFS = {}
 
 # ================= STATS =================
@@ -37,6 +39,42 @@ def add_user(user_id):
     if user_id not in stats["users"]:
         stats["users"].append(user_id)
         save_stats(stats)
+
+# ================= CACHE =================
+
+def load_cache():
+    if not os.path.exists(CACHE_FILE):
+        return {}
+    try:
+        with open(CACHE_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_cache(cache):
+    with open(CACHE_FILE, "w") as f:
+        json.dump(cache, f)
+
+def get_cache(url):
+    cache = load_cache()
+    item = cache.get(url)
+
+    if not item:
+        return None
+
+    # expire بعد 24 ساعة
+    if time.time() - item["time"] > 86400:
+        return None
+
+    return item["data"]
+
+def set_cache(url, data):
+    cache = load_cache()
+    cache[url] = {
+        "data": data,
+        "time": time.time()
+    }
+    save_cache(cache)
 
 # ================= PREF =================
 
@@ -77,16 +115,13 @@ def api_tiklydown(url):
 def api_ssstik(url):
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
-
         r = requests.post(
             "https://ssstik.io/abc?url=dl",
             data={"id": url, "locale": "en"},
             headers=headers,
             timeout=10
         )
-
         soup = BeautifulSoup(r.text, "html.parser")
-
         link = soup.find("a", {"class": "without_watermark"})
         if link:
             return {
@@ -94,7 +129,6 @@ def api_ssstik(url):
                 "audio": None,
                 "title": "TikTok Video"
             }
-
     except Exception as e:
         print("ssstik error:", e)
 
@@ -104,6 +138,12 @@ def api_ssstik(url):
 
 def get_data(url, retries=2):
     url = url.split("?")[0]
+
+    # 🔥 CACHE FIRST
+    cached = get_cache(url)
+    if cached:
+        print("⚡ FROM CACHE")
+        return cached
 
     apis = [api_tikwm, api_tiklydown, api_ssstik]
 
@@ -116,16 +156,14 @@ def get_data(url, retries=2):
             }
 
             for future in concurrent.futures.as_completed(futures):
-                api_name = futures[future]
-
                 try:
                     data = future.result()
                     if data and data.get("video"):
-                        print(f"SUCCESS FROM {api_name}")
+                        print("✅ FROM API")
+                        set_cache(url, data)
                         return data
-
                 except Exception as e:
-                    print(f"{api_name} error:", e)
+                    print("error:", e)
 
         print("Retrying...")
 
@@ -170,7 +208,7 @@ def start(message):
     username = message.from_user.username
     display = f"@{username}" if username else name
 
-    text = f"""🛡️ {display} | أهلاً بيك 👋
+    text = f""" {display} | أهلاً بيك 👋
 
 🎬 بوت تحميل TikTok
 
@@ -180,6 +218,7 @@ def start(message):
 📛 اسم الفيديو الحقيقي
 💿 استخراج الصوت
 🧠 اختيار أسرع سيرفر
+⚡ سرعة خرافية (Cache)
 
 ━━━━━━━━━━━━━━━
 """
@@ -258,7 +297,6 @@ def process_video(message):
                 save_stats(stats)
 
                 bot.edit_message_text("✅ تم التحميل", message.chat.id, msg.message_id)
-
                 bot.send_message(message.chat.id, "🔁 عايز تحمل تاني؟", reply_markup=main_buttons())
 
             else:
@@ -287,7 +325,12 @@ def process_audio(message):
                 run_async(download_audio(data["audio"], file_path))
 
                 with open(file_path, "rb") as f:
-                    bot.send_audio(message.chat.id, f, caption=f"🎧 {title}", title=title)
+                    bot.send_audio(
+                        message.chat.id,
+                        f,
+                        caption=f"🎧 {title}",
+                        title=title
+                    )
 
                 os.remove(file_path)
 
