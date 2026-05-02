@@ -8,7 +8,7 @@ import aiohttp
 import threading
 import concurrent.futures
 
-TOKEN = "8582326537:AAEIqaGuU24vekRPFqZnHSV9mS6CczJu_xw"
+TOKEN = "YOUR_BOT_TOKEN"
 bot = telebot.TeleBot(TOKEN)
 
 STATS_FILE = "stats.json"
@@ -121,7 +121,7 @@ def start(message):
     username = message.from_user.username
     display = f"@{username}" if username else name
 
-    text = f""" {display} | أهلاً بيك 👋
+    text = f"""🛡️ {display} | أهلاً بيك 👋
 
 🎬 بوت تحميل TikTok
 
