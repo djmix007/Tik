@@ -327,9 +327,7 @@ def start(message):
     
     text = f"""🌟 **أهلاً وسهلاً بك {display}!** 🌟
 
-━━━━━━━━━━━━━━━━━━━━
 🎬 **بوت تحميل TikTok Pro**
-━━━━━━━━━━━━━━━━━━━━
 
 ✨ **ماذا يقدم لك البوت؟**
 ✅ تحميل فيديوهات بدون علامة مائية
@@ -338,19 +336,15 @@ def start(message):
 🛡️ 4 سيرفرات احتياطية لضمان نجاح التحميل
 📊 إحصائيات لحظية لمتابعة استخدامك
 
-━━━━━━━━━━━━━━━━━━━━
 📌 **الأوامر المتاحة:**
 /start 🚀 بدء البوت والترحيب
 /help ❓ عرض قائمة المساعدة
 /video 🎥 تحميل فيديو بدون علامة مائية
 /audio 🎵 تحميل صوت فقط MP3
 
-━━━━━━━━━━━━━━━━━━━━
 💡 **نصيحة:** استخدم الأزرار لتحديد نوع التحميل مسبقاً!
 
-🔥 **تم التطوير بواسطة:** @EyadZaen
-━━━━━━━━━━━━━━━━━━━━
-"""
+🔥 **تم التطوير بواسطة:** @EyadZaen"""
     
     bot.send_message(
         message.chat.id, 
@@ -364,7 +358,6 @@ def start(message):
 def help_command(message):
     text = """❓ **قائمة المساعدة**
 
-━━━━━━━━━━━━━━━━━━━━
 📋 **الأوامر المتاحة:**
 
 /start 🚀 بدء البوت والترحيب
@@ -372,19 +365,15 @@ def help_command(message):
 /video 🎥 تحميل فيديو بدون علامة مائية
 /audio 🎵 تحميل صوت فقط MP3
 
-━━━━━━━━━━━━━━━━━━━━
 📌 **طريقة الاستخدام:**
 1️⃣ استخدم الأمر /video أو /audio
 2️⃣ أرسل رابط فيديو تيك توك
 3️⃣ انتظر حتى يكتمل التحميل
 
-━━━━━━━━━━━━━━━━━━━━
 ⚠️ **الحد الأقصى:** 30 تحميل يومياً
 💡 استخدم التحميلات بحكمة!
 
-👨‍💻 **المطور:** @EyadZaen
-━━━━━━━━━━━━━━━━━━━━
-"""
+👨‍💻 **المطور:** @EyadZaen"""
     bot.reply_to(message, text, parse_mode="Markdown")
 
 # أمر /video - تحميل فيديو بدون علامة مائية 🎥
@@ -421,18 +410,16 @@ def stats_command(message):
     stats = load_stats()
     text = f"""📊 **إحصائيات البوت**
 
-━━━━━━━━━━━━━━━━━━━━
 👥 **المستخدمين:** {len(stats.get("users", []))}
 📥 **إجمالي التحميلات:** {stats.get("downloads", 0)}
 
 🎬 **فيديوهات:** {stats.get("video", 0)}
 🎧 **صوتيات:** {stats.get("audio", 0)}
 ❌ **أخطاء:** {stats.get("errors", 0)}
-━━━━━━━━━━━━━━━━━━━━
+
 🕐 آخر تحديث: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 
-👨‍💻 **المطور:** @EyadZaen
-"""
+👨‍💻 **المطور:** @EyadZaen"""
     bot.reply_to(message, text, parse_mode="Markdown")
 
 # أمر /limit - عرض التحميلات المتبقية 📊
@@ -441,13 +428,11 @@ def limit_command(message):
     remaining = get_remaining_limit(message.from_user.id)
     text = f"""📊 **التحميلات المتبقية اليوم**
 
-━━━━━━━━━━━━━━━━━━━━
 📥 **متبقي:** {remaining} من 30
 
 💡 استخدم تحميلاتك بحكمة!
-━━━━━━━━━━━━━━━━━━━━
-👨‍💻 **المطور:** @EyadZaen
-"""
+
+👨‍💻 **المطور:** @EyadZaen"""
     bot.reply_to(message, text, parse_mode="Markdown")
 
 # ================= AUTO =================
@@ -522,23 +507,20 @@ def callback(call):
             stats = load_stats()
             text = f"""📊 **إحصائيات البوت**
 
-━━━━━━━━━━━━━━━━━━━━
 👥 **المستخدمين:** {len(stats.get("users", []))}
 📥 **التحميلات:** {stats.get("downloads", 0)}
 
 🎬 **فيديو:** {stats.get("video", 0)}
 🎧 **صوت:** {stats.get("audio", 0)}
 ❌ **أخطاء:** {stats.get("errors", 0)}
-━━━━━━━━━━━━━━━━━━━━
-👨‍💻 **المطور:** @EyadZaen
-"""
+
+👨‍💻 **المطور:** @EyadZaen"""
             bot.answer_callback_query(call.id, text, show_alert=True)
             
         elif call.data == "help":
             bot.answer_callback_query(call.id, "❓ المساعدة")
             text = """❓ **قائمة المساعدة**
 
-━━━━━━━━━━━━━━━━━━━━
 📋 **الأوامر المتاحة:**
 
 /start 🚀 بدء البوت والترحيب
@@ -546,16 +528,13 @@ def callback(call):
 /video 🎥 تحميل فيديو بدون علامة مائية
 /audio 🎵 تحميل صوت فقط MP3
 
-━━━━━━━━━━━━━━━━━━━━
 📌 **طريقة الاستخدام:**
 1️⃣ استخدم الأمر /video أو /audio
 2️⃣ أرسل رابط فيديو تيك توك
 3️⃣ انتظر حتى يكتمل التحميل
 
-━━━━━━━━━━━━━━━━━━━━
 ⚠️ الحد الأقصى: 30 تحميل يومياً
-👨‍💻 **المطور:** @EyadZaen
-"""
+👨‍💻 **المطور:** @EyadZaen"""
             bot.edit_message_text(
                 text,
                 call.message.chat.id,
@@ -568,7 +547,6 @@ def callback(call):
             bot.answer_callback_query(call.id, "📝 عن البوت")
             text = """📝 **عن البوت**
 
-━━━━━━━━━━━━━━━━━━━━
 🎬 **بوت تحميل TikTok Pro**
 📌 الإصدار: 2.0
 
@@ -579,21 +557,17 @@ def callback(call):
 • إحصائيات لحظية
 • حد يومي 30 تحميل
 
-━━━━━━━━━━━━━━━━━━━━
 📋 **الأوامر:**
 /start 🚀 بدء البوت
 /help ❓ المساعدة
 /video 🎥 تحميل فيديو
 /audio 🎵 تحميل صوت
 
-━━━━━━━━━━━━━━━━━━━━
 👨‍💻 **المطور:**
 @EyadZaen
 
 🌐 **مصدر مفتوح**
-💡 للتطوير والاقتراحات تواصل معي!
-━━━━━━━━━━━━━━━━━━━━
-"""
+💡 للتطوير والاقتراحات تواصل معي!"""
             bot.edit_message_text(
                 text,
                 call.message.chat.id,
@@ -627,7 +601,7 @@ def process_video(message):
                     bot.send_video(
                         message.chat.id,
                         data["video"],
-                        caption=f"🎬 **{data.get('title', 'TikTok Video')[:200]}**\n\n━━━━━━━━━━━━━━━━━━━━\n📥 تم التحميل بواسطة @EyadZaen",
+                        caption=f"🎬 **{data.get('title', 'TikTok Video')[:200]}**\n\n📥 تم التحميل بواسطة @EyadZaen",
                         supports_streaming=True,
                         parse_mode="Markdown"
                     )
@@ -706,7 +680,7 @@ def process_audio(message):
                             bot.send_audio(
                                 message.chat.id,
                                 f,
-                                caption=f"🎧 **{title[:200]}**\n\n━━━━━━━━━━━━━━━━━━━━\n📥 تم التحميل بواسطة @EyadZaen",
+                                caption=f"🎧 **{title[:200]}**\n\n📥 تم التحميل بواسطة @EyadZaen",
                                 title=title,
                                 parse_mode="Markdown"
                             )
