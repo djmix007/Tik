@@ -21,8 +21,8 @@ if not TOKEN or TOKEN == "":
     print("📌 تأكد من إضافة TOKEN في متغيرات البيئة على Railway")
     sys.exit(1)
 
-# التحقق من صحة التوكن (تجنباً لخطأ validate_token)
-if not TOKEN.startswith("7") or len(TOKEN) < 40:
+# التحقق من صحة التوكن
+if not TOKEN.startswith(("5", "6", "7")) or len(TOKEN) < 40:
     print(f"⚠️ تحذير: التوكن يبدو غير صحيح (الطول: {len(TOKEN)})")
     print("📌 تأكد من نسخ التوكن بشكل صحيح من @BotFather")
 
@@ -324,20 +324,29 @@ def start(message):
     username = message.from_user.username
     display = f"@{username}" if username else name
     
-    text = f"""👋 أهلاً بك {display}!
+    text = f"""🌟 **أهلاً وسهلاً بك {display}!** 🌟
 
-🎬 **بوت تحميل TikTok**
 ━━━━━━━━━━━━━━━━━━━━
-✅ بدون علامة مائية
-🎵 استخراج الصوت MP3
-⚡ سرعة فائقة مع التخزين المؤقت
-🛡️ 4 سيرفرات احتياطية
-📊 إحصائيات لحظية
+🎬 **بوت تحميل TikTok Pro**
+━━━━━━━━━━━━━━━━━━━━
 
+✨ **ماذا يقدم لك البوت؟**
+✅ تحميل فيديوهات بدون علامة مائية
+🎵 استخراج الصوت بصيغة MP3 عالية الجودة
+⚡ سرعة خيالية مع نظام التخزين المؤقت
+🛡️ 4 سيرفرات احتياطية لضمان نجاح التحميل
+📊 إحصائيات لحظية لمتابعة استخدامك
+
+━━━━━━━━━━━━━━━━━━━━
 📌 **طريقة الاستخدام:**
 • أرسل رابط فيديو تيك توك مباشرة
-• أو استخدم الأزرار أدناه
+• أو اختر النوع من الأزرار أدناه
+• استمتع بالتحميل السريع!
 
+━━━━━━━━━━━━━━━━━━━━
+💡 **نصيحة:** استخدم الأزرار لتحديد نوع التحميل مسبقاً!
+
+🔥 **تم التطوير بواسطة:** @EyadZaen
 ━━━━━━━━━━━━━━━━━━━━
 """
     
@@ -350,19 +359,27 @@ def start(message):
 
 @bot.message_handler(commands=['help'])
 def help_command(message):
-    text = """❓ **طريقة استخدام البوت**
+    text = """❓ **دليل استخدام البوت**
 
-1️⃣ أرسل رابط فيديو تيك توك مباشرة
+━━━━━━━━━━━━━━━━━━━━
+📌 **الخطوات:**
+1️⃣ أرسل رابط فيديو تيك توك
 2️⃣ اختر نوع التحميل (فيديو/صوت)
 3️⃣ انتظر حتى يكتمل التحميل
 
-📌 **الأوامر المتاحة:**
+━━━━━━━━━━━━━━━━━━━━
+📋 **الأوامر المتاحة:**
 • `/start` - القائمة الرئيسية
 • `/help` - هذه الرسالة
 • `/stats` - إحصائيات البوت
 • `/limit` - عدد التحميلات المتبقية
 
+━━━━━━━━━━━━━━━━━━━━
 ⚠️ **الحد الأقصى:** 30 تحميل يومياً
+💡 **نصيحة:** استخدم التحميلات بحكمة!
+
+━━━━━━━━━━━━━━━━━━━━
+👨‍💻 **المطور:** @EyadZaen
 """
     bot.reply_to(message, text, parse_mode="Markdown")
 
@@ -371,14 +388,17 @@ def stats_command(message):
     stats = load_stats()
     text = f"""📊 **إحصائيات البوت**
 
+━━━━━━━━━━━━━━━━━━━━
 👥 **المستخدمين:** {len(stats.get("users", []))}
 📥 **إجمالي التحميلات:** {stats.get("downloads", 0)}
 
 🎬 **فيديوهات:** {stats.get("video", 0)}
 🎧 **صوتيات:** {stats.get("audio", 0)}
 ❌ **أخطاء:** {stats.get("errors", 0)}
-
+━━━━━━━━━━━━━━━━━━━━
 🕐 آخر تحديث: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+👨‍💻 **المطور:** @EyadZaen
 """
     bot.reply_to(message, text, parse_mode="Markdown")
 
@@ -387,9 +407,12 @@ def limit_command(message):
     remaining = get_remaining_limit(message.from_user.id)
     text = f"""📊 **التحميلات المتبقية اليوم**
 
+━━━━━━━━━━━━━━━━━━━━
 📥 **متبقي:** {remaining} من 30
 
-💡 استخدم التحميلات بحكمة!
+💡 استخدم تحميلاتك بحكمة!
+━━━━━━━━━━━━━━━━━━━━
+👨‍💻 **المطور:** @EyadZaen
 """
     bot.reply_to(message, text, parse_mode="Markdown")
 
@@ -405,7 +428,7 @@ def auto_download(message):
         remaining = get_remaining_limit(user_id)
         bot.reply_to(
             message, 
-            f"⚠️ **لقد وصلت للحد الأقصى اليومي!**\n\n📊 المتبقي: 0 من 30\n🔄 انتظر حتى الغد لتتمكن من التحميل مجدداً.",
+            f"⚠️ **لقد وصلت للحد الأقصى اليومي!**\n\n📊 المتبقي: 0 من 30\n🔄 انتظر حتى الغد لتتمكن من التحميل مجدداً.\n\n👨‍💻 **المطور:** @EyadZaen",
             parse_mode="Markdown"
         )
         return
@@ -465,30 +488,38 @@ def callback(call):
             stats = load_stats()
             text = f"""📊 **إحصائيات البوت**
 
+━━━━━━━━━━━━━━━━━━━━
 👥 **المستخدمين:** {len(stats.get("users", []))}
 📥 **التحميلات:** {stats.get("downloads", 0)}
 
 🎬 **فيديو:** {stats.get("video", 0)}
 🎧 **صوت:** {stats.get("audio", 0)}
 ❌ **أخطاء:** {stats.get("errors", 0)}
+━━━━━━━━━━━━━━━━━━━━
+👨‍💻 **المطور:** @EyadZaen
 """
             bot.answer_callback_query(call.id, text, show_alert=True)
             
         elif call.data == "help":
             bot.answer_callback_query(call.id, "❓ المساعدة")
-            text = """❓ **كيفية الاستخدام**
+            text = """❓ **دليل استخدام البوت**
 
+━━━━━━━━━━━━━━━━━━━━
+📌 **الخطوات:**
 1️⃣ أرسل رابط تيك توك
 2️⃣ اختر فيديو أو صوت
 3️⃣ انتظر التحميل
 
-📌 **الأوامر:**
+━━━━━━━━━━━━━━━━━━━━
+📋 **الأوامر:**
 /start - الرئيسية
 /help - المساعدة
 /stats - الإحصائيات
 /limit - المتبقي اليوم
 
+━━━━━━━━━━━━━━━━━━━━
 ⚠️ الحد الأقصى: 30 تحميل يومياً
+👨‍💻 **المطور:** @EyadZaen
 """
             bot.edit_message_text(
                 text,
@@ -502,7 +533,8 @@ def callback(call):
             bot.answer_callback_query(call.id, "📝 عن البوت")
             text = """📝 **عن البوت**
 
-🎬 **بوت تحميل TikTok**
+━━━━━━━━━━━━━━━━━━━━
+🎬 **بوت تحميل TikTok Pro**
 📌 الإصدار: 2.0
 
 ⚙️ **المميزات:**
@@ -512,7 +544,13 @@ def callback(call):
 • إحصائيات لحظية
 • حد يومي 30 تحميل
 
-👨‍💻 تم التطوير بواسطة مجتمع مفتوح المصدر
+━━━━━━━━━━━━━━━━━━━━
+👨‍💻 **المطور:**
+@EyadZaen
+
+🌐 **مصدر مفتوح**
+💡 للتطوير والاقتراحات تواصل معي!
+━━━━━━━━━━━━━━━━━━━━
 """
             bot.edit_message_text(
                 text,
@@ -547,7 +585,7 @@ def process_video(message):
                     bot.send_video(
                         message.chat.id,
                         data["video"],
-                        caption=f"🎬 **{data.get('title', 'TikTok Video')[:200]}**",
+                        caption=f"🎬 **{data.get('title', 'TikTok Video')[:200]}**\n\n━━━━━━━━━━━━━━━━━━━━\n📥 تم التحميل بواسطة @EyadZaen",
                         supports_streaming=True,
                         parse_mode="Markdown"
                     )
@@ -555,7 +593,7 @@ def process_video(message):
                     increment_downloads("video")
                     
                     bot.edit_message_text(
-                        "✅ **تم التحميل بنجاح!**",
+                        "✅ **تم التحميل بنجاح!** 🎉",
                         message.chat.id,
                         msg.message_id
                     )
@@ -563,7 +601,7 @@ def process_video(message):
                     remaining = get_remaining_limit(message.from_user.id)
                     bot.send_message(
                         message.chat.id,
-                        f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 أرسل رابط آخر للتحميل مجدداً!",
+                        f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 أرسل رابط آخر للتحميل مجدداً!\n\n👨‍💻 **المطور:** @EyadZaen",
                         reply_markup=main_buttons(),
                         parse_mode="Markdown"
                     )
@@ -582,7 +620,7 @@ def process_video(message):
                 save_stats(stats)
                 
                 bot.edit_message_text(
-                    "❌ **فشل التحميل من جميع السيرفرات**\n\n🔄 حاول بعد قليل أو أرسل رابطاً آخر",
+                    "❌ **فشل التحميل من جميع السيرفرات**\n\n🔄 حاول بعد قليل أو أرسل رابطاً آخر\n\n👨‍💻 **المطور:** @EyadZaen",
                     message.chat.id,
                     msg.message_id
                 )
@@ -591,7 +629,7 @@ def process_video(message):
             print(f"❌ Process video error: {e}")
             try:
                 bot.edit_message_text(
-                    "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى",
+                    "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى\n\n👨‍💻 **المطور:** @EyadZaen",
                     message.chat.id,
                     msg.message_id
                 )
@@ -626,7 +664,7 @@ def process_audio(message):
                             bot.send_audio(
                                 message.chat.id,
                                 f,
-                                caption=f"🎧 **{title[:200]}**",
+                                caption=f"🎧 **{title[:200]}**\n\n━━━━━━━━━━━━━━━━━━━━\n📥 تم التحميل بواسطة @EyadZaen",
                                 title=title,
                                 parse_mode="Markdown"
                             )
@@ -636,7 +674,7 @@ def process_audio(message):
                         increment_downloads("audio")
                         
                         bot.edit_message_text(
-                            "✅ **تم التحميل بنجاح!**",
+                            "✅ **تم التحميل بنجاح!** 🎉",
                             message.chat.id,
                             msg.message_id
                         )
@@ -644,7 +682,7 @@ def process_audio(message):
                         remaining = get_remaining_limit(message.from_user.id)
                         bot.send_message(
                             message.chat.id,
-                            f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 أرسل رابط آخر للتحميل مجدداً!",
+                            f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 أرسل رابط آخر للتحميل مجدداً!\n\n👨‍💻 **المطور:** @EyadZaen",
                             reply_markup=main_buttons(),
                             parse_mode="Markdown"
                         )
@@ -654,7 +692,7 @@ def process_audio(message):
                 except Exception as e:
                     print(f"❌ Audio download/send error: {e}")
                     bot.edit_message_text(
-                        "❌ **فشل تحميل الصوت**\n\n🔄 حاول مرة أخرى",
+                        "❌ **فشل تحميل الصوت**\n\n🔄 حاول مرة أخرى\n\n👨‍💻 **المطور:** @EyadZaen",
                         message.chat.id,
                         msg.message_id
                     )
@@ -665,7 +703,7 @@ def process_audio(message):
                 save_stats(stats)
                 
                 bot.edit_message_text(
-                    "❌ **الصوت غير متوفر لهذا الفيديو**\n\n🔄 حاول فيديو آخر",
+                    "❌ **الصوت غير متوفر لهذا الفيديو**\n\n🔄 حاول فيديو آخر\n\n👨‍💻 **المطور:** @EyadZaen",
                     message.chat.id,
                     msg.message_id
                 )
@@ -674,7 +712,7 @@ def process_audio(message):
             print(f"❌ Process audio error: {e}")
             try:
                 bot.edit_message_text(
-                    "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى",
+                    "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى\n\n👨‍💻 **المطور:** @EyadZaen",
                     message.chat.id,
                     msg.message_id
                 )
@@ -690,7 +728,7 @@ def handle_unknown(message):
     if message.text and "tiktok.com" not in message.text.lower():
         bot.reply_to(
             message,
-            "❌ **يرجى إرسال رابط تيك توك فقط**\n\nأو استخدم الأزرار للبدء",
+            "❌ **يرجى إرسال رابط تيك توك فقط**\n\nأو استخدم الأزرار للبدء\n\n👨‍💻 **المطور:** @EyadZaen",
             reply_markup=main_buttons(),
             parse_mode="Markdown"
         )
@@ -701,6 +739,7 @@ if __name__ == "__main__":
     print("🔥 TikTok Bot is Starting...")
     print(f"📊 Bot Token: {TOKEN[:5]}...{TOKEN[-5:]}")
     print(f"🐍 Python Version: {sys.version}")
+    print("👨‍💻 Developed by: Eyad Zaen")
     print("🔄 Starting infinity polling...")
     
     while True:
