@@ -1,4 +1,4 @@
-pyTelegramBotAPI
-requests
-aiohttp
-beautifulsoup4
+pyTelegramBotAPI==4.13.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+aiohttp==3.9.1
