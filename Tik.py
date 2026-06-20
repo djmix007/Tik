@@ -313,8 +313,9 @@ def mode_buttons():
     markup.add(*buttons)
     return markup
 
-# ================= START =================
+# ================= COMMANDS =================
 
+# أمر /start - بدء البوت والترحيب 🚀
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = message.from_user.id
@@ -338,10 +339,11 @@ def start(message):
 📊 إحصائيات لحظية لمتابعة استخدامك
 
 ━━━━━━━━━━━━━━━━━━━━
-📌 **طريقة الاستخدام:**
-• أرسل رابط فيديو تيك توك مباشرة
-• أو اختر النوع من الأزرار أدناه
-• استمتع بالتحميل السريع!
+📌 **الأوامر المتاحة:**
+/start 🚀 بدء البوت والترحيب
+/help ❓ عرض قائمة المساعدة
+/video 🎥 تحميل فيديو بدون علامة مائية
+/audio 🎵 تحميل صوت فقط MP3
 
 ━━━━━━━━━━━━━━━━━━━━
 💡 **نصيحة:** استخدم الأزرار لتحديد نوع التحميل مسبقاً!
@@ -357,32 +359,63 @@ def start(message):
         parse_mode="Markdown"
     )
 
+# أمر /help - عرض قائمة المساعدة ❓
 @bot.message_handler(commands=['help'])
 def help_command(message):
-    text = """❓ **دليل استخدام البوت**
-
-━━━━━━━━━━━━━━━━━━━━
-📌 **الخطوات:**
-1️⃣ أرسل رابط فيديو تيك توك
-2️⃣ اختر نوع التحميل (فيديو/صوت)
-3️⃣ انتظر حتى يكتمل التحميل
+    text = """❓ **قائمة المساعدة**
 
 ━━━━━━━━━━━━━━━━━━━━
 📋 **الأوامر المتاحة:**
-• `/start` - القائمة الرئيسية
-• `/help` - هذه الرسالة
-• `/stats` - إحصائيات البوت
-• `/limit` - عدد التحميلات المتبقية
+
+/start 🚀 بدء البوت والترحيب
+/help ❓ عرض قائمة المساعدة
+/video 🎥 تحميل فيديو بدون علامة مائية
+/audio 🎵 تحميل صوت فقط MP3
+
+━━━━━━━━━━━━━━━━━━━━
+📌 **طريقة الاستخدام:**
+1️⃣ استخدم الأمر /video أو /audio
+2️⃣ أرسل رابط فيديو تيك توك
+3️⃣ انتظر حتى يكتمل التحميل
 
 ━━━━━━━━━━━━━━━━━━━━
 ⚠️ **الحد الأقصى:** 30 تحميل يومياً
-💡 **نصيحة:** استخدم التحميلات بحكمة!
+💡 استخدم التحميلات بحكمة!
 
-━━━━━━━━━━━━━━━━━━━━
 👨‍💻 **المطور:** @EyadZaen
+━━━━━━━━━━━━━━━━━━━━
 """
     bot.reply_to(message, text, parse_mode="Markdown")
 
+# أمر /video - تحميل فيديو بدون علامة مائية 🎥
+@bot.message_handler(commands=['video'])
+def video_command(message):
+    user_id = message.from_user.id
+    add_user(user_id)
+    set_user_pref(user_id, "video")
+    
+    bot.reply_to(
+        message,
+        "🎥 **أرسل رابط فيديو تيك توك للتحميل بدون علامة مائية**\n\n📌 مثال:\n`https://www.tiktok.com/@user/video/123456789`",
+        parse_mode="Markdown"
+    )
+    bot.register_next_step_handler(message, process_video)
+
+# أمر /audio - تحميل صوت فقط MP3 🎵
+@bot.message_handler(commands=['audio'])
+def audio_command(message):
+    user_id = message.from_user.id
+    add_user(user_id)
+    set_user_pref(user_id, "audio")
+    
+    bot.reply_to(
+        message,
+        "🎵 **أرسل رابط فيديو تيك توك لاستخراج الصوت MP3**\n\n📌 مثال:\n`https://www.tiktok.com/@user/video/123456789`",
+        parse_mode="Markdown"
+    )
+    bot.register_next_step_handler(message, process_audio)
+
+# أمر /stats - عرض الإحصائيات 📊
 @bot.message_handler(commands=['stats'])
 def stats_command(message):
     stats = load_stats()
@@ -402,6 +435,7 @@ def stats_command(message):
 """
     bot.reply_to(message, text, parse_mode="Markdown")
 
+# أمر /limit - عرض التحميلات المتبقية 📊
 @bot.message_handler(commands=['limit'])
 def limit_command(message):
     remaining = get_remaining_limit(message.from_user.id)
@@ -442,7 +476,7 @@ def auto_download(message):
     else:
         bot.reply_to(
             message, 
-            "🎯 **اختر نوع التحميل:**",
+            "🎯 **اختر نوع التحميل:**\n\n/video 🎥 فيديو بدون علامة مائية\n/audio 🎵 صوت فقط MP3",
             reply_markup=mode_buttons(),
             parse_mode="Markdown"
         )
@@ -459,7 +493,7 @@ def callback(call):
             bot.answer_callback_query(call.id, "✅ تم اختيار فيديو")
             msg = bot.send_message(
                 call.message.chat.id, 
-                "📥 **أرسل رابط فيديو تيك توك**",
+                "🎥 **أرسل رابط فيديو تيك توك للتحميل بدون علامة مائية**",
                 parse_mode="Markdown"
             )
             bot.register_next_step_handler(msg, process_video)
@@ -469,7 +503,7 @@ def callback(call):
             bot.answer_callback_query(call.id, "✅ تم اختيار صوت")
             msg = bot.send_message(
                 call.message.chat.id, 
-                "🎧 **أرسل رابط فيديو تيك توك**",
+                "🎵 **أرسل رابط فيديو تيك توك لاستخراج الصوت MP3**",
                 parse_mode="Markdown"
             )
             bot.register_next_step_handler(msg, process_audio)
@@ -477,7 +511,7 @@ def callback(call):
         elif call.data == "home":
             bot.answer_callback_query(call.id, "🏠 الرئيسية")
             bot.edit_message_text(
-                "🏠 **القائمة الرئيسية**",
+                "🏠 **القائمة الرئيسية**\n\n📌 استخدم الأوامر أو الأزرار للبدء",
                 call.message.chat.id,
                 call.message.message_id,
                 reply_markup=main_buttons(),
@@ -502,20 +536,21 @@ def callback(call):
             
         elif call.data == "help":
             bot.answer_callback_query(call.id, "❓ المساعدة")
-            text = """❓ **دليل استخدام البوت**
+            text = """❓ **قائمة المساعدة**
 
 ━━━━━━━━━━━━━━━━━━━━
-📌 **الخطوات:**
-1️⃣ أرسل رابط تيك توك
-2️⃣ اختر فيديو أو صوت
-3️⃣ انتظر التحميل
+📋 **الأوامر المتاحة:**
+
+/start 🚀 بدء البوت والترحيب
+/help ❓ عرض قائمة المساعدة
+/video 🎥 تحميل فيديو بدون علامة مائية
+/audio 🎵 تحميل صوت فقط MP3
 
 ━━━━━━━━━━━━━━━━━━━━
-📋 **الأوامر:**
-/start - الرئيسية
-/help - المساعدة
-/stats - الإحصائيات
-/limit - المتبقي اليوم
+📌 **طريقة الاستخدام:**
+1️⃣ استخدم الأمر /video أو /audio
+2️⃣ أرسل رابط فيديو تيك توك
+3️⃣ انتظر حتى يكتمل التحميل
 
 ━━━━━━━━━━━━━━━━━━━━
 ⚠️ الحد الأقصى: 30 تحميل يومياً
@@ -545,6 +580,13 @@ def callback(call):
 • حد يومي 30 تحميل
 
 ━━━━━━━━━━━━━━━━━━━━
+📋 **الأوامر:**
+/start 🚀 بدء البوت
+/help ❓ المساعدة
+/video 🎥 تحميل فيديو
+/audio 🎵 تحميل صوت
+
+━━━━━━━━━━━━━━━━━━━━
 👨‍💻 **المطور:**
 @EyadZaen
 
@@ -571,7 +613,7 @@ def callback(call):
 
 def process_video(message):
     if not message.text or "tiktok.com" not in message.text.lower():
-        bot.reply_to(message, "❌ **يرجى إرسال رابط تيك توك صحيح**", parse_mode="Markdown")
+        bot.reply_to(message, "❌ **يرجى إرسال رابط تيك توك صحيح**\n\nمثال:\n`https://www.tiktok.com/@user/video/123456789`", parse_mode="Markdown")
         return
     
     msg = bot.reply_to(message, "⚡ **جاري تحضير الفيديو...**", parse_mode="Markdown")
@@ -601,7 +643,7 @@ def process_video(message):
                     remaining = get_remaining_limit(message.from_user.id)
                     bot.send_message(
                         message.chat.id,
-                        f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 أرسل رابط آخر للتحميل مجدداً!\n\n👨‍💻 **المطور:** @EyadZaen",
+                        f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 استخدم /video أو /audio للتحميل مجدداً!\n\n👨‍💻 **المطور:** @EyadZaen",
                         reply_markup=main_buttons(),
                         parse_mode="Markdown"
                     )
@@ -642,7 +684,7 @@ def process_video(message):
 
 def process_audio(message):
     if not message.text or "tiktok.com" not in message.text.lower():
-        bot.reply_to(message, "❌ **يرجى إرسال رابط تيك توك صحيح**", parse_mode="Markdown")
+        bot.reply_to(message, "❌ **يرجى إرسال رابط تيك توك صحيح**\n\nمثال:\n`https://www.tiktok.com/@user/video/123456789`", parse_mode="Markdown")
         return
     
     msg = bot.reply_to(message, "⚡ **جاري تحضير الصوت...**", parse_mode="Markdown")
@@ -682,7 +724,7 @@ def process_audio(message):
                         remaining = get_remaining_limit(message.from_user.id)
                         bot.send_message(
                             message.chat.id,
-                            f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 أرسل رابط آخر للتحميل مجدداً!\n\n👨‍💻 **المطور:** @EyadZaen",
+                            f"📊 **متبقي اليوم:** {remaining} من 30\n\n🔁 استخدم /video أو /audio للتحميل مجدداً!\n\n👨‍💻 **المطور:** @EyadZaen",
                             reply_markup=main_buttons(),
                             parse_mode="Markdown"
                         )
@@ -728,7 +770,7 @@ def handle_unknown(message):
     if message.text and "tiktok.com" not in message.text.lower():
         bot.reply_to(
             message,
-            "❌ **يرجى إرسال رابط تيك توك فقط**\n\nأو استخدم الأزرار للبدء\n\n👨‍💻 **المطور:** @EyadZaen",
+            "❌ **يرجى إرسال رابط تيك توك فقط**\n\n📋 **الأوامر المتاحة:**\n/start 🚀 بدء البوت\n/help ❓ المساعدة\n/video 🎥 تحميل فيديو\n/audio 🎵 تحميل صوت\n\n👨‍💻 **المطور:** @EyadZaen",
             reply_markup=main_buttons(),
             parse_mode="Markdown"
         )
