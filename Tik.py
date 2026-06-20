@@ -10,15 +10,28 @@ import concurrent.futures
 import time
 from bs4 import BeautifulSoup
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
+import sys
 
 # ================= CONFIG =================
 
 TOKEN = os.getenv("TOKEN")
-if not TOKEN:
-    raise ValueError("❌ TOKEN غير موجود! تأكد من إضافته في متغيرات البيئة")
+if not TOKEN or TOKEN == "":
+    print("❌ خطأ: TOKEN غير موجود أو فارغ!")
+    print("📌 تأكد من إضافة TOKEN في متغيرات البيئة على Railway")
+    sys.exit(1)
 
-bot = telebot.TeleBot(TOKEN, parse_mode=None)
+# التحقق من صحة التوكن (تجنباً لخطأ validate_token)
+if not TOKEN.startswith("7") or len(TOKEN) < 40:
+    print(f"⚠️ تحذير: التوكن يبدو غير صحيح (الطول: {len(TOKEN)})")
+    print("📌 تأكد من نسخ التوكن بشكل صحيح من @BotFather")
+
+try:
+    bot = telebot.TeleBot(TOKEN, parse_mode=None)
+    print("✅ تم إنشاء البوت بنجاح")
+except Exception as e:
+    print(f"❌ فشل إنشاء البوت: {e}")
+    sys.exit(1)
 
 STATS_FILE = "stats.json"
 CACHE_FILE = "cache.json"
@@ -37,8 +50,11 @@ def load_stats():
         return {"users": [], "downloads": 0, "video": 0, "audio": 0, "errors": 0}
 
 def save_stats(stats):
-    with open(STATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(stats, f, ensure_ascii=False, indent=2)
+    try:
+        with open(STATS_FILE, "w", encoding="utf-8") as f:
+            json.dump(stats, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"❌ خطأ في حفظ الإحصائيات: {e}")
 
 def add_user(user_id):
     stats = load_stats()
@@ -67,8 +83,11 @@ def load_cache():
         return {}
 
 def save_cache(cache):
-    with open(CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(cache, f, ensure_ascii=False, indent=2)
+    try:
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"❌ خطأ في حفظ الكاش: {e}")
 
 def get_cache(url):
     cache = load_cache()
@@ -101,7 +120,6 @@ def check_limit(user_id):
     if key not in USER_LIMITS:
         USER_LIMITS[key] = {"count": 0, "date": today}
     
-    # إذا كان اليوم مختلف، إعادة تعيين العداد
     if USER_LIMITS[key]["date"] != today:
         USER_LIMITS[key] = {"count": 0, "date": today}
     
@@ -139,16 +157,16 @@ def api_tikwm(url):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
         r = requests.post("https://tikwm.com/api/", data={"url": url}, headers=headers, timeout=15)
-        data = r.json()
-        
-        if data.get("code") == 0 and data.get("data"):
-            video_data = data["data"]
-            return {
-                "video": video_data.get("play"),
-                "audio": video_data.get("music"),
-                "title": video_data.get("title", "TikTok Video"),
-                "images": video_data.get("images", [])
-            }
+        if r.status_code == 200:
+            data = r.json()
+            if data.get("code") == 0 and data.get("data"):
+                video_data = data["data"]
+                return {
+                    "video": video_data.get("play"),
+                    "audio": video_data.get("music"),
+                    "title": video_data.get("title", "TikTok Video"),
+                    "images": video_data.get("images", [])
+                }
     except Exception as e:
         print(f"❌ tikwm error: {e}")
     return None
@@ -156,15 +174,15 @@ def api_tikwm(url):
 def api_tiklydown(url):
     try:
         r = requests.get(f"https://api.tiklydown.me/api/download?url={url}", timeout=15)
-        data = r.json()
-        
-        if data.get("success") and data.get("video"):
-            return {
-                "video": data["video"].get("noWatermark"),
-                "audio": data["video"].get("audio"),
-                "title": data["video"].get("title", "TikTok Video"),
-                "images": data.get("images", [])
-            }
+        if r.status_code == 200:
+            data = r.json()
+            if data.get("success") and data.get("video"):
+                return {
+                    "video": data["video"].get("noWatermark"),
+                    "audio": data["video"].get("audio"),
+                    "title": data["video"].get("title", "TikTok Video"),
+                    "images": data.get("images", [])
+                }
     except Exception as e:
         print(f"❌ tiklydown error: {e}")
     return None
@@ -181,17 +199,16 @@ def api_ssstik(url):
             headers=headers,
             timeout=15
         )
-        soup = BeautifulSoup(r.text, "html.parser")
-        
-        # البحث عن رابط بدون علامة مائية
-        link = soup.find("a", {"class": "without_watermark"})
-        if link and link.get("href"):
-            return {
-                "video": link["href"],
-                "audio": None,
-                "title": "TikTok Video",
-                "images": []
-            }
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            link = soup.find("a", {"class": "without_watermark"})
+            if link and link.get("href"):
+                return {
+                    "video": link["href"],
+                    "audio": None,
+                    "title": "TikTok Video",
+                    "images": []
+                }
     except Exception as e:
         print(f"❌ ssstik error: {e}")
     return None
@@ -200,15 +217,15 @@ def api_tikmate(url):
     """API إضافية للنسخ الاحتياطي"""
     try:
         r = requests.get(f"https://api.tikmate.app/api/get?url={url}", timeout=15)
-        data = r.json()
-        
-        if data.get("success") and data.get("url"):
-            return {
-                "video": data["url"],
-                "audio": None,
-                "title": data.get("title", "TikTok Video"),
-                "images": []
-            }
+        if r.status_code == 200:
+            data = r.json()
+            if data.get("success") and data.get("url"):
+                return {
+                    "video": data["url"],
+                    "audio": None,
+                    "title": data.get("title", "TikTok Video"),
+                    "images": []
+                }
     except Exception as e:
         print(f"❌ tikmate error: {e}")
     return None
@@ -257,28 +274,16 @@ def get_data(url, retries=3):
     print("❌ ALL APIs FAILED")
     return None
 
-# ================= ASYNC AUDIO =================
-
-async def download_audio_async(url, path):
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                if response.status == 200:
-                    data = await response.read()
-                    with open(path, "wb") as f:
-                        f.write(data)
-                    return True
-                return False
-    except Exception as e:
-        print(f"❌ Audio download error: {e}")
-        return False
+# ================= AUDIO DOWNLOAD =================
 
 def download_audio_sync(url, path):
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=30, stream=True)
         if response.status_code == 200:
             with open(path, "wb") as f:
-                f.write(response.content)
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
             return True
         return False
     except Exception as e:
@@ -289,21 +294,23 @@ def download_audio_sync(url, path):
 
 def main_buttons():
     markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
+    buttons = [
         types.InlineKeyboardButton("🎬 فيديو", callback_data="video"),
         types.InlineKeyboardButton("🎧 صوت", callback_data="audio"),
         types.InlineKeyboardButton("📊 الإحصائيات", callback_data="stats"),
         types.InlineKeyboardButton("❓ المساعدة", callback_data="help"),
         types.InlineKeyboardButton("📝 عن البوت", callback_data="about")
-    )
+    ]
+    markup.add(*buttons)
     return markup
 
 def mode_buttons():
     markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
+    buttons = [
         types.InlineKeyboardButton("🎬 فيديو", callback_data="video"),
         types.InlineKeyboardButton("🎧 صوت", callback_data="audio")
-    )
+    ]
+    markup.add(*buttons)
     return markup
 
 # ================= START =================
@@ -324,7 +331,7 @@ def start(message):
 ✅ بدون علامة مائية
 🎵 استخراج الصوت MP3
 ⚡ سرعة فائقة مع التخزين المؤقت
-🛡️ 3 سيرفرات احتياطية
+🛡️ 4 سيرفرات احتياطية
 📊 إحصائيات لحظية
 
 📌 **طريقة الاستخدام:**
@@ -517,7 +524,10 @@ def callback(call):
             
     except Exception as e:
         print(f"❌ Callback error: {e}")
-        bot.answer_callback_query(call.id, "❌ حدث خطأ، حاول مرة أخرى")
+        try:
+            bot.answer_callback_query(call.id, "❌ حدث خطأ، حاول مرة أخرى")
+        except:
+            pass
 
 # ================= VIDEO =================
 
@@ -533,7 +543,6 @@ def process_video(message):
             data = get_data(message.text)
             
             if data and data.get("video"):
-                # إرسال الفيديو
                 try:
                     bot.send_video(
                         message.chat.id,
@@ -568,7 +577,6 @@ def process_video(message):
                     )
                     
             else:
-                # تحديث الإحصائيات بالأخطاء
                 stats = load_stats()
                 stats["errors"] = stats.get("errors", 0) + 1
                 save_stats(stats)
@@ -581,11 +589,14 @@ def process_video(message):
                 
         except Exception as e:
             print(f"❌ Process video error: {e}")
-            bot.edit_message_text(
-                "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى",
-                message.chat.id,
-                msg.message_id
-            )
+            try:
+                bot.edit_message_text(
+                    "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى",
+                    message.chat.id,
+                    msg.message_id
+                )
+            except:
+                pass
     
     threading.Thread(target=task, daemon=True).start()
 
@@ -604,11 +615,9 @@ def process_audio(message):
             
             if data and data.get("audio"):
                 title = data.get("title", "TikTok Audio")
-                # تنظيف اسم الملف
                 safe_title = re.sub(r'[<>:"/\\|?*]', '', title)[:50]
                 file_path = f"{safe_title}.mp3"
                 
-                # تحميل الصوت
                 try:
                     success = download_audio_sync(data["audio"], file_path)
                     
@@ -651,7 +660,6 @@ def process_audio(message):
                     )
                     
             else:
-                # تحديث الإحصائيات بالأخطاء
                 stats = load_stats()
                 stats["errors"] = stats.get("errors", 0) + 1
                 save_stats(stats)
@@ -664,11 +672,14 @@ def process_audio(message):
                 
         except Exception as e:
             print(f"❌ Process audio error: {e}")
-            bot.edit_message_text(
-                "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى",
-                message.chat.id,
-                msg.message_id
-            )
+            try:
+                bot.edit_message_text(
+                    "❌ **حدث خطأ غير متوقع**\n\n🔄 حاول مرة أخرى",
+                    message.chat.id,
+                    msg.message_id
+                )
+            except:
+                pass
     
     threading.Thread(target=task, daemon=True).start()
 
@@ -676,7 +687,7 @@ def process_audio(message):
 
 @bot.message_handler(func=lambda m: True)
 def handle_unknown(message):
-    if "tiktok.com" not in message.text.lower():
+    if message.text and "tiktok.com" not in message.text.lower():
         bot.reply_to(
             message,
             "❌ **يرجى إرسال رابط تيك توك فقط**\n\nأو استخدم الأزرار للبدء",
@@ -689,13 +700,14 @@ def handle_unknown(message):
 if __name__ == "__main__":
     print("🔥 TikTok Bot is Starting...")
     print(f"📊 Bot Token: {TOKEN[:5]}...{TOKEN[-5:]}")
+    print(f"🐍 Python Version: {sys.version}")
     print("🔄 Starting infinity polling...")
     
-    try:
-        bot.infinity_polling(timeout=30, long_polling_timeout=30)
-    except Exception as e:
-        print(f"❌ Bot crashed: {e}")
-        time.sleep(5)
-        # إعادة التشغيل التلقائي
-        print("🔄 Restarting...")
-        os.execv(__file__, sys.argv)
+    while True:
+        try:
+            bot.infinity_polling(timeout=30, long_polling_timeout=30)
+        except Exception as e:
+            print(f"❌ Bot crashed: {e}")
+            print("🔄 Restarting in 5 seconds...")
+            time.sleep(5)
+            continue
