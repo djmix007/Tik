@@ -1,1 +1,1 @@
-worker: python Tik.py
+worker: python -u Tik.py
